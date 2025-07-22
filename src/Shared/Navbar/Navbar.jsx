@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router';
+import useAuth from '../../Hooks/useAuth';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,6 +13,7 @@ const Navbar = () => {
   const location = useLocation();
   const searchRef = useRef(null);
   const userDropdownRef = useRef(null);
+  const { user, logOut } = useAuth();
   
   // Navigation links array with empty fragments
   const navLinks = [
@@ -28,6 +30,18 @@ const Navbar = () => {
     { id: 3, name: 'Sea Blue Jeans' },
     { id: 4, name: 'Teal Summer Shorts' },
   ];
+
+  // Handle logout
+  const handleLogout = () => {
+    logOut()
+      .then(() => {
+        console.log('Logged out successfully');
+        setIsUserDropdownOpen(false);
+      })
+      .catch(error => {
+        console.error('Logout error:', error);
+      });
+  };
 
   // Handle search input
   useEffect(() => {
@@ -159,23 +173,52 @@ const Navbar = () => {
               )}
             </Link>
 
-            {/* User Account */}
+            {/* User Account - conditional rendering based on auth */}
             <div className="relative ml-1" ref={userDropdownRef}>
-              <button
-                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                className="flex text-gray-700 hover:text-[hsl(214,88%,27%)] p-1.5 focus:outline-none"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </button>
+              {user ? (
+                <button
+                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                  className="flex items-center text-gray-700 hover:text-[hsl(214,88%,27%)] p-1.5 focus:outline-none"
+                >
+                  {user.photoURL ? (
+                    <img 
+                      src={user.photoURL} 
+                      alt={user.displayName || 'User'} 
+                      className="h-6 w-6 rounded-full object-cover border border-gray-300"
+                    />
+                  ) : (
+                    <div className="h-6 w-6 rounded-full bg-[hsl(214,88%,27%)] flex items-center justify-center text-white text-xs font-medium">
+                      {user.displayName ? user.displayName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : 'U')}
+                    </div>
+                  )}
+                  <span className="ml-1 text-sm truncate max-w-[80px]">
+                    {user.displayName || (user.email ? user.email.split('@')[0] : 'User')}
+                  </span>
+                </button>
+              ) : (
+                <Link 
+                  to="/login" 
+                  className="flex items-center text-[hsl(214,88%,27%)] hover:text-[hsl(214,70%,40%)] py-1.5 px-3 border border-[hsl(214,88%,27%)] rounded-md text-sm font-medium transition-colors"
+                >
+                  Sign in
+                </Link>
+              )}
               
-              {isUserDropdownOpen && (
+              {user && isUserDropdownOpen && (
                 <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 z-20">
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-900 truncate">{user.displayName || 'User'}</p>
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  </div>
                   <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</Link>
                   <Link to="/orders" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Orders</Link>
                   <Link to="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</Link>
-                  <Link to="/login" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</Link>
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                  >
+                    Sign out
+                  </button>
                 </div>
               )}
             </div>
@@ -257,34 +300,65 @@ const Navbar = () => {
             )}
           </div>
           
-          {/* Mobile User Actions */}
+          {/* Mobile User Actions - conditional rendering based on auth */}
           <div className="border-t border-gray-200 pt-3 pb-3">
-            <div className="flex items-center px-4">
-              <div className="flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[hsl(214,88%,27%)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+            {user ? (
+              <div>
+                <div className="flex items-center px-4">
+                  <div className="flex-shrink-0">
+                    {user.photoURL ? (
+                      <img 
+                        src={user.photoURL} 
+                        alt={user.displayName || 'User'} 
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-[hsl(214,88%,27%)] flex items-center justify-center text-white font-medium">
+                        {user.displayName ? user.displayName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : 'U')}
+                      </div>
+                    )}
+                  </div>
+                  <div className="ml-3">
+                    <div className="text-sm font-medium text-gray-700">{user.displayName || (user.email ? user.email.split('@')[0] : 'User')}</div>
+                    <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                  </div>
+                </div>
+                <div className="mt-2 px-2 space-y-1">
+                  <Link to="/profile" className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setIsOpen(false)}>Your Profile</Link>
+                  <Link to="/orders" className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setIsOpen(false)}>Your Orders</Link>
+                  <Link to="/wishlist" className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setIsOpen(false)}>Wishlist</Link>
+                  <Link to="/cart" className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setIsOpen(false)}>
+                    Cart
+                    {cartCount > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                        {cartCount}
+                      </span>
+                    )}
+                  </Link>
+                  <Link to="/settings" className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setIsOpen(false)}>Settings</Link>
+                  <button 
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
+                    className="w-full text-left block px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-gray-100"
+                  >
+                    Sign out
+                  </button>
+                </div>
               </div>
-              <div className="ml-3">
-                <div className="text-sm font-medium text-gray-700">Guest User</div>
-                <div className="text-xs text-gray-500">Sign in to your account</div>
+            ) : (
+              <div className="px-4 py-2 flex flex-col items-center">
+                <p className="text-sm text-gray-600 mb-2">Sign in to access your account</p>
+                <Link 
+                  to="/login" 
+                  className="w-full py-2 bg-[hsl(214,88%,27%)] text-white rounded-md text-sm font-medium text-center"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Sign in / Register
+                </Link>
               </div>
-            </div>
-            <div className="mt-2 px-2 space-y-1">
-              <Link to="/profile" className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setIsOpen(false)}>Your Profile</Link>
-              <Link to="/orders" className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setIsOpen(false)}>Your Orders</Link>
-              <Link to="/wishlist" className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setIsOpen(false)}>Wishlist</Link>
-              <Link to="/cart" className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setIsOpen(false)}>
-                Cart
-                {cartCount > 0 && (
-                  <span className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
-              <Link to="/settings" className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setIsOpen(false)}>Settings</Link>
-              <Link to="/login" className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setIsOpen(false)}>Sign in / Register</Link>
-            </div>
+            )}
           </div>
         </div>
       )}
